@@ -1,79 +1,56 @@
 # app.py
+
 import streamlit as st
-import sqlite3
-import pandas as pd
+# Importamos as funções que criamos no nosso módulo de banco de dados
+from PostDAO import fetch_all_posts, add_post
 
-class App:
-    
-# --- CONFIGURAÇÃO DA CONEXÃO E CACHE ---
+# --- CONFIGURAÇÃO DO CACHE E FUNÇÕES DE DADOS DA APLICAÇÃO ---
 
-# O decorador @st.cache_data é crucial para o desempenho.
-# Ele armazena o resultado da função em cache. A consulta ao banco
-# só será executada novamente se o código da função mudar.
-    @st.cache_data
-    def fetch_all_posts():
-        """Busca todos os posts do banco de dados."""
-        conn = sqlite3.connect('meu_blog.db')
-        # O resultado de uma consulta SELECT pode ser facilmente lido pelo pandas
-        df = pd.read_sql_query("SELECT * FROM posts ORDER BY created_at DESC", conn)
-        conn.close()
-        return df
+# A responsabilidade do cache fica aqui, na camada da aplicação!
+# Esta função "envolve" a nossa função de busca de dados com o cache do Streamlit.
+@st.cache_data
+def load_posts():
+    """Carrega os posts usando a função do módulo de banco de dados."""
+    return fetch_all_posts()
 
-    # --- INTERFACE DA APLICAÇÃO ---
+# --- INTERFACE DA APLICAÇÃO ---
 
-    st.set_page_config(page_title="Blog com SQLite", layout="centered")
+st.set_page_config(page_title="Blog Refatorado", layout="centered")
 
-    st.title("📝 Meu Blog com Streamlit e SQLite")
+st.title("📝 Meu Blog (Código Refatorado)")
 
-    # Busca os dados usando a função cacheada
-    all_posts = fetch_all_posts()
+# --- FORMULÁRIO PARA NOVO POST ---
 
-    st.header("Posts Recentes")
+st.header("Escrever Novo Post")
+with st.form(key="new_post_form", clear_on_submit=True):
+    title = st.text_input("Título do Post")
+    content = st.text_area("Conteúdo")
+    submit_button = st.form_submit_button(label="Publicar")
 
-    # Se não houver posts, mostre uma mensagem
-    if all_posts.empty:
-        st.info("Ainda não há posts no mural. Adicione um novo post abaixo!")
+# Se o formulário for enviado, chame a função de adicionar post do nosso módulo.
+if submit_button:
+    if not title or not content:
+        st.error("Por favor, preencha o título e o conteúdo do post.")
     else:
-        # Itera sobre cada linha do DataFrame para exibir os posts
-        for index, post in all_posts.iterrows():
-            st.subheader(post['title'])
-            st.write(f"_{post['created_at']}_") # Formata a data em itálico
-            st.write(post['content'])
-            st.markdown("---")
-            
-    # (código anterior aqui...)
+        add_post(title, content) # <-- Chamando a função importada
+        st.success("Post publicado com sucesso!")
+        # Limpa o cache para garantir que a lista de posts seja atualizada.
+        st.cache_data.clear()
+        # O rerun continua aqui para forçar a atualização da tela.
+        st.rerun()
 
-    # --- FORMULÁRIO PARA NOVO POST ---
+st.markdown("---")
 
-    st.header("Escrever Novo Post")
+# --- EXIBIÇÃO DOS POSTS ---
 
-    # st.form cria um formulário que agrupa elementos
-    with st.form(key="new_post_form", clear_on_submit=True):
-        title = st.text_input("Título do Post")
-        content = st.text_area("Conteúdo")
-        
-        # st.form_submit_button para enviar o formulário
-        submit_button = st.form_submit_button(label="Publicar")
+st.header("Posts Recentes")
+all_posts = load_posts() # <-- Usando nossa função cacheada para carregar os dados
 
-    # --- LÓGICA DE INSERÇÃO ---
-
-    def add_post(title, content):
-        """Adiciona um novo post ao banco de dados."""
-        conn = sqlite3.connect('meu_blog.db')
-        cursor = conn.cursor()
-        # FORMA SEGURA: Usando placeholders (?) para evitar SQL Injection
-        cursor.execute("INSERT INTO posts (title, content) VALUES (?, ?)", (title, content))
-        conn.commit()
-        conn.close()
-
-    if submit_button:
-        # Validação simples
-        if not title or not content:
-            st.error("Por favor, preencha o título e o conteúdo do post.")
-        else:
-            add_post(title, content)
-            st.success("Post publicado com sucesso!")
-            # Limpa o cache para que a lista de posts seja atualizada
-            st.cache_data.clear()
-            # Força o rerodamento do script para exibir o novo post imediatamente
-            st.rerun()
+if all_posts.empty:
+    st.info("Ainda não há posts no mural.")
+else:
+    for index, post in all_posts.iterrows():
+        st.subheader(post['title'])
+        st.write(f"_{post['created_at']}_")
+        st.write(post['content'])
+        st.markdown("---")
