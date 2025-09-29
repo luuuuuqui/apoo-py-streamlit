@@ -1,17 +1,16 @@
 import sqlite3
 
-
 class Item:
-    def __init__(self, id: int, descricao: str, quantidade: str):
+    def __init__(self, id: int, descricao: str, quantidade: int):
         self.id = id
         self.descricao = descricao
-        self.quantidade = quantidade
+        self.quantidade = int(quantidade)
 
     def to_json(self) -> dict:
         return {
             "id": self.id,
             "descricao": self.descricao,
-            "quantidade": self.quantidade
+            "quantidade": int(self.quantidade)
         }
 
     def __str__(self) -> str:
@@ -28,7 +27,7 @@ class ItemDAO:
             CREATE TABLE IF NOT EXISTS itens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 descricao TEXT NOT NULL,
-                quantidade TEXT NOT NULL
+                quantidade INTEGER NOT NULL
             )
         ''')
         conn.commit()
@@ -40,7 +39,7 @@ class ItemDAO:
         conn = sqlite3.connect(ItemDAO.DB_NAME)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO itens (descricao, quantidade) VALUES (?, ?)",
-                       (item.descricao, item.quantidade))
+                       (item.descricao, int(item.quantidade)))
         conn.commit()
         conn.close()
 
@@ -52,7 +51,7 @@ class ItemDAO:
         cursor.execute("SELECT id, descricao, quantidade FROM itens")
         rows = cursor.fetchall()
         conn.close()
-        return [Item(id=row[0], descricao=row[1], quantidade=row[2]) for row in rows]
+        return [Item(id=row[0], descricao=row[1], quantidade=int(row[2])) for row in rows]
 
     @staticmethod
     def listar_id(id) -> object:
@@ -63,7 +62,7 @@ class ItemDAO:
         row = cursor.fetchone()
         conn.close()
         if row:
-            return Item(id=row[0], descricao=row[1], quantidade=row[2])
+            return Item(id=row[0], descricao=row[1], quantidade=int(row[2]))
         return None
 
     @staticmethod
@@ -72,7 +71,7 @@ class ItemDAO:
         conn = sqlite3.connect(ItemDAO.DB_NAME)
         cursor = conn.cursor()
         cursor.execute("UPDATE itens SET descricao = ?, quantidade = ? WHERE id = ?",
-                       (item.descricao, item.quantidade, item.id))
+                       (item.descricao, int(item.quantidade), item.id))
         conn.commit()
         conn.close()
 

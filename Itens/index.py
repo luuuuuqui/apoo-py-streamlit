@@ -14,4 +14,5 @@ class IndexUI:
     def main():
         IndexUI.sidebar()
 
-IndexUI.main()
+if __name__ == "__main__":
+    ManterItemUI.main()

@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from views import View 
+from controller.views import View 
 import time
 
 class ManterItemUI:
@@ -26,11 +26,11 @@ class ManterItemUI:
     @staticmethod
     def inserir():
         descricao = st.text_input("Informe a descrição")
-        quantidade = st.text_input("Informe a quantidade")
+        quantidade = st.number_input("Informe a quantidade", min_value=0, step=1)
         if st.button("Inserir"):
-            View.item_inserir(descricao, quantidade)
+            View.item_inserir(descricao, int(quantidade))
             st.success("Item inserido com sucesso")
-            time.sleep(2)
+            time.sleep(1)
             st.rerun()
 
     @staticmethod
@@ -41,12 +41,12 @@ class ManterItemUI:
             op = st.selectbox("Atualização de Itens", itens, format_func=lambda x: str(x))
             if op is not None:
                 descricao = st.text_input("Informe a nova descrição:", op.descricao)
-                quantidade = st.text_input("Informe a nova quantidade:", op.quantidade)
+                quantidade = st.number_input("Informe a nova quantidade:", min_value=0, step=1, value=int(op.quantidade))
                 if st.button("Atualizar"):
                     id = op.id
-                    View.item_atualizar(id, descricao, quantidade)
+                    View.item_atualizar(id, descricao, int(quantidade))
                     st.success("Item atualizado com sucesso")
-                    time.sleep(2)
+                    time.sleep(1)
                     st.rerun()
 
     @staticmethod
@@ -59,5 +59,5 @@ class ManterItemUI:
                 id = op.id
                 View.item_excluir(id)
                 st.success("Item excluído com sucesso")
-                time.sleep(2)
+                time.sleep(1)
                 st.rerun()
